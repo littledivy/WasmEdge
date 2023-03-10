@@ -31,19 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     find_wasmedge()
 }
 
-#[cfg(not(feature = "static"))]
-fn find_wasmedge() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(all(feature = "standalone", target_family = "unix"))]
-    install_libwasmedge();
-
-    let Paths {
-        header,
-        lib_dir,
-        inc_dir,
-    } = find_libwasmedge().expect(
-        "[wasmedge-sys] Failed to locate the required header and/or library file. Please reference the link: https://wasmedge.org/book/en/embed/rust.html",
-    );
-
+fn gen_wasmedge_rs(header: PathBuf, inc_dir: PathBuf) {
     let out_file = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("wasmedge.rs");
     bindgen::builder()
         .header(
@@ -59,10 +47,41 @@ fn find_wasmedge() -> Result<(), Box<dyn std::error::Error>> {
         .expect("failed to generate bindings")
         .write_to_file(out_file)
         .expect("failed to write bindings");
+}
 
-    println!("cargo:rustc-env=LD_LIBRARY_PATH={}", lib_dir.display());
-    println!("cargo:rustc-link-search={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=dylib=wasmedge");
+#[cfg(not(feature = "static"))]
+fn find_wasmedge() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(all(feature = "standalone", target_family = "unix"))]
+    install_libwasmedge();
+
+    let (header, inc_dir) = if cfg!(feature = "manual_link") {
+        let inc_dir = env_path!("WASMEDGE_INCLUDE_DIR").unwrap();
+        let header = inc_dir.join("wasmedge");
+        let header = header.join(WASMEDGE_H);
+
+        if inc_dir.exists() && header.exists() {
+            (header, inc_dir)
+        } else {
+            panic!(
+                "[wasmedge-sys] Failed to locate the required header and/or library file. Please reference the link: https://wasmedge.org/book/en/embed/rust.html",
+            );  
+        }
+    } else {
+        let Paths {
+            header,
+            lib_dir,
+            inc_dir,
+        } = find_libwasmedge().expect(
+            "[wasmedge-sys] Failed to locate the required header and/or library file. Please reference the link: https://wasmedge.org/book/en/embed/rust.html",
+        );
+
+        println!("cargo:rustc-env=LD_LIBRARY_PATH={}", lib_dir.display());
+        println!("cargo:rustc-link-search={}", lib_dir.display());
+        println!("cargo:rustc-link-lib=dylib=wasmedge");
+        (header, inc_dir)
+    };
+
+    gen_wasmedge_rs(header, inc_dir);
 
     Ok(())
 }

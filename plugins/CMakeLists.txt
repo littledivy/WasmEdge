@@ -9,6 +9,10 @@ if(WASMEDGE_PLUGIN_WASI_CRYPTO)
   add_subdirectory(wasi_crypto)
 endif()
 
+if(WASMEDGE_PLUGIN_WASI_ZLIB)
+  add_subdirectory(wasi_zlib)
+endif()
+
 if(WASMEDGE_PLUGIN_PROCESS) 
   # Only Linux systems support wasmedge_process now.
   if(CMAKE_SYSTEM_NAME MATCHES "Linux")
