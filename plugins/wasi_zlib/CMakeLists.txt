@@ -12,14 +12,14 @@ corrosion_import_crate(MANIFEST_PATH Cargo.toml)
 
 corrosion_set_env_vars(wasi_zlib WASMEDGE_INCLUDE_DIR=${CMAKE_SOURCE_DIR}/build/include/api)
 
-if(WASMEDGE_LINK_PLUGINS_STATIC)
-  corrosion_link_libraries(wasi_zlib
-    wasmedgeCAPI
-  )
+corrosion_link_libraries(wasi_zlib
+  wasmedge_shared
+)
+
+if(NOT WASMEDGE_LINK_PLUGINS_STATIC)
+  set(BUILD_SHARED_LIBS ON)
 else()
-  corrosion_link_libraries(wasi_zlib
-    wasmedge_shared
-  )
+
 endif()
 
 install(TARGETS wasi_zlib DESTINATION ${CMAKE_INSTALL_LIBDIR}/wasmedge)
